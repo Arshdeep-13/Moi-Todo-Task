@@ -3,6 +3,7 @@ import { VoyageProvider, Wallet, getLogicDriver } from 'js-moi-sdk';
 import { info, success } from "./utils/toastWrapper";
 import { Toaster } from "react-hot-toast";
 import Loader from "./components/Loader";
+let count = 0;
 
 // ------- Update with your credentials ------------------ //
 const logicId = "0x080000597c2cd6a5a6e37ae40e871ef2b840605d4686a7ca81a41808e297607b42aea0"
@@ -28,6 +29,7 @@ function App() {
   // Loaders
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [marking, setMarking] = useState(false);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ function App() {
     try {
       setAdding(true)
       info("Adding Todo ...");
-      
+
       const ix = await logicDriver.routines.Add([todoName]).send({
         fuelPrice: 1,
         fuelLimit: 1000,
@@ -62,7 +64,7 @@ function App() {
 
       // Waiting for tesseract to be mined
       await ix.wait()
-      
+
       await getTodos()
       success("Successfully Added");
       setTodoName("")
@@ -81,7 +83,7 @@ function App() {
       });
       // Waiting for tesseract to be mined
       await ix.wait();
-      
+
       const tTodos = [...todos];
       tTodos[id].completed = true;
       setTodos(tTodos);
@@ -91,14 +93,32 @@ function App() {
     }
   };
 
+  const del = async () => {
+    try {
+      const selectedTodos = todos.filter((todo) => todo.completed);
+      if (selectedTodos.length === 0) {
+        alert("Please mark a todo as completed before deleting.");
+        return;
+      }
+
+      success("Successfully Removed Completed Todos");
+
+      // Filter out completed todos from the state
+      const updatedTodos = todos.filter((todo) => !todo.completed);
+      setTodos(updatedTodos);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <Toaster />
-      <section class="section-center">
-        <form class="todo-form">
-          <p class="alert"></p>
+      <section className="section-center">
+        <form className="todo-form">
+          <p className="alert"></p>
           <h3>Todo buddy</h3>
-          <div class="form-control">
+          <div className="form-control">
             <input
               value={todoName}
               name="todoName"
@@ -107,15 +127,25 @@ function App() {
               id="todo"
               placeholder="e.g. Attend Moi Event"
             />
-            <button onClick={add} type="submit" class="submit-btn">
-            {adding ? <Loader color={"#000"} loading={adding} /> :"Add Todo"}
+            <button onClick={add} type="submit" className="submit-btn">
+              {adding ? <Loader color={"#000"} loading={adding} /> : "Add Todo"}
             </button>
           </div>
         </form>
-        {!loading ? <div class="todo-container show-container">
+
+        <div className="del-container" style={{
+          display: "flex", justifyContent: "center",
+          alignItems: "center", margin: "1rem"
+        }}>
+          <button onClick={del} type="button" className="submit-btn" style={{ background: "rgb(5 199 5)", borderRadius: "13px" }}>
+            {deleting ? <Loader color={"#000"} loading={deleting} /> : "Delete Todo"}
+          </button>
+        </div>
+
+        {!loading ? <div className="todo-container show-container">
           {todos.map((todo, index) => {
             return (
-              <div class="todo-list">
+              <div className="todo-list" key={count++}>
                 {todo.name}
                 {todo.completed ? (
                   <img className="icon" src="/images/check.svg" />
@@ -124,17 +154,17 @@ function App() {
                     onClick={() => markCompleted(index)}
                     className="underline text-red pointer"
                   >
-                    {marking === index? <Loader color={"#000"} loading={marking === 0 ? true:marking} /> :"Mark Completed!"}
+                    {marking === index ? <Loader color={"#000"} loading={marking === 0 ? true : marking} /> : "Mark Completed!"}
                   </span>
                 )}
               </div>
             );
           })}
-        </div> 
-        : 
-        <div style={{marginTop:"20px"}}>
-          <Loader color={"#000"} loading={loading} />  
-        </div>}
+        </div>
+          :
+          <div style={{ marginTop: "20px" }}>
+            <Loader color={"#000"} loading={loading} />
+          </div>}
       </section>
     </>
   );
